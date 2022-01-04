@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>예지관 산악회</title>
+
+    {% load static %}
+    {% load django_bootstrap5 %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    {% bootstrap_messages %}
+    <link href="{% static '/favicon.ico' %}" rel="icon">
+    <link href="{% static '/css/index.css' %}" rel="stylesheet" type="text/css">
+    <link href="{% static 'fontawesome_free/css/all.min.css' %}" rel="stylesheet" type="text/css">
+    <script src="{% static 'fontawesome_free/js/all.min.js' %}"></script>
+
+</head>
+<body style="width: 100vw; height: 100vh">
+<div class="topbar text-center">예지관 산악회</div>
+<div id="map"></div>
+<div class="footer text-center">
+    Started on May 2021
+</div>
+
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{KAKAO_MAP_API_KEY}}"></script>
+<script>
+    var records= {{ records | safe }};
+    var mapContainer = document.getElementById('map'),
+        mapOption = {
+            center: new kakao.maps.LatLng(33.450701, 126.570667),
+            level: 3
+        };
+
+    var map = new kakao.maps.Map(mapContainer, mapOption);
+    var bounds = new kakao.maps.LatLngBounds();
+    var positions = [];
+
+    for (var i = 0; i < records.length; i++) {
+        var lat = records[i][0];
+        var lng = records[i][1];
+        var content = records[i][2];
+
+        positions.push(
+            {
+                content: content,
+                latlng: new kakao.maps.LatLng(lat, lng),
+            }
+        );
+    }
+
+    for (var i = 0; i < positions.length; i ++) {
+        var marker = new kakao.maps.Marker({
+            position: positions[i].latlng,
+            clickable: true,
+            map: map,
+        });
+
+        var customOverlay = new kakao.maps.CustomOverlay({
+            position: positions[i].latlng,
+            yAnchor: 1,
+        });
+
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(positions[i].content, "text/html");
+
+        var card = doc.getElementsByClassName('card')[0];
+        var items = card.getElementsByClassName('carousel-item');
+        var btns = card.getElementsByClassName('carousel-btn');
+        var span = card.getElementsByClassName('close')[0];
+
+        if (items.length > 0){
+            items[0].classList.add("active");
+            btns[0].classList.add("active");
+        }
+
+        span.onclick = card_close(customOverlay);
+
+        customOverlay.setContent(card);
+
+        kakao.maps.event.addListener(marker, 'click', card_open(map, customOverlay, positions[i].latlng));
+
+        bounds.extend(positions[i].latlng);
+    }
+
+    if (records.length > 0) map.setBounds(bounds);
+    map.addOverlayMapTypeId(kakao.maps.MapTypeId.TERRAIN);
+
+    function card_open(map, overlay, latlng){
+        return function() {
+            map.panTo(latlng);
+            overlay.setMap(map);
+        }
+    }
+
+    function card_close(overlay){
+        return function() {
+            overlay.setMap(null);
+        }
+    }
+
+    window.addEventListener('resize', function(event){
+        if (records.length > 0) map.setBounds(bounds);
+    });
+
+</script>
+<script>
+    (function() {
+    var hidden = "hidden";
+
+    // Standards:
+    if (hidden in document)
+        document.addEventListener("visibilitychange", onchange);
+    else if ((hidden = "mozHidden") in document)
+        document.addEventListener("mozvisibilitychange", onchange);
+    else if ((hidden = "webkitHidden") in document)
+        document.addEventListener("webkitvisibilitychange", onchange);
+    else if ((hidden = "msHidden") in document)
+        document.addEventListener("msvisibilitychange", onchange);
+    // IE 9 and lower:
+    else if ('onfocusin' in document)
+        document.onfocusin = document.onfocusout = onchange;
+    // All others:
+    else
+        window.onpageshow = window.onpagehide
+            = window.onfocus = window.onblur = onchange;
+
+    function onchange (evt) {
+        var v = 'sg-tab-bust-visible', h = 'sg-tab-bust-hidden',
+            evtMap = {
+                focus:v, focusin:v, pageshow:v, blur:h, focusout:h, pagehide:h
+            };
+
+        evt = evt || window.event;
+        if (evt.type in evtMap)
+            document.body.className = evtMap[evt.type];
+        else
+            document.body.className = this[hidden] ? "sg-tab-bust-hidden" : "sg-tab-bust-visible";
+    }
+})();
+</script>
+</body>
+</html>
