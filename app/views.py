@@ -26,7 +26,7 @@ def build_card(record):
 
         photo_element = f'''
         <div class="carousel-item">
-            <img loading="lazy" class="card-img" src="{photo.file.url}">
+            <img loading="eager" class="card-img" src="{photo.file.url}">
         </div>
         '''
         photo_elements.append(photo_element)
